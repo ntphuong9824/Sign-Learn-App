@@ -1,0 +1,236 @@
+{
+  "version": "1.0.0",
+  "lastScanned": 1775225720394,
+  "projectRoot": "D:\\Project FSoft\\translate-master",
+  "techStack": {
+    "languages": [
+      {
+        "name": "JavaScript/TypeScript",
+        "version": ">=18",
+        "confidence": "high",
+        "markers": [
+          "package.json"
+        ]
+      },
+      {
+        "name": "TypeScript",
+        "version": null,
+        "confidence": "high",
+        "markers": [
+          "tsconfig.json"
+        ]
+      }
+    ],
+    "frameworks": [
+      {
+        "name": "@angular/core",
+        "version": "21.0.6",
+        "category": "frontend"
+      },
+      {
+        "name": "express",
+        "version": "5.2.1",
+        "category": "backend"
+      },
+      {
+        "name": "@playwright/test",
+        "version": "1.57.0",
+        "category": "testing"
+      }
+    ],
+    "packageManager": "npm",
+    "runtime": "Node.js 18"
+  },
+  "build": {
+    "buildCommand": "npm run build",
+    "testCommand": "npm test",
+    "lintCommand": "npm run lint",
+    "devCommand": "npm run start",
+    "scripts": {
+      "ng": "ng",
+      "lint": "NODE_OPTIONS=--max_old_space_size=16384 ng lint",
+      "start": "ng serve --host 0.0.0.0",
+      "build": "ng build --configuration=production --base-href=/",
+      "build:stats": "ng build --stats-json",
+      "analyze": "webpack-bundle-analyzer dist/sign-translate/browser/stats.json",
+      "pwa:assets": "pwa-asset-generator src/assets/icons/logo.svg src/assets/icons/generated/ -i src/index.html -m src/manifest.webmanifest --background white --favicon --mstile && pwa-asset-generator src/assets/icons/logo-dark.svg --dark-mode src/assets/icons/generated/ -i src/index.html --background black --splash-only",
+      "capacitor:assets": "capacitor-assets generate --verbose --ios --android --assetPath src/assets/icons --iconBackgroundColor=white --iconBackgroundColorDark=black --splashBackgroundColor=white --splashBackgroundColorDark=black --logoSplashTargetWidth=768",
+      "test": "ng test --code-coverage",
+      "test:chrome": "ng test --browsers=Chrome --code-coverage",
+      "test:firefox": "ng test --browsers=Firefox --code-coverage",
+      "test:ci": "ng test --browsers=ChromeHeadless,FirefoxHeadless --watch=false --code-coverage",
+      "deploy": "firebase deploy --only=hosting",
+      "mobile:sync": "tsx tools/mobile/sync.ts",
+      "mobile:metadata": "tsx tools/mobile/metadata/metadata.ts",
+      "prepare:husky": "node -e \"require('fs').cpSync('node_modules/@sign-mt/configuration/.husky/', '.husky/', {recursive: true})\"",
+      "prepare": "husky",
+      "test:workflow": "act --container-architecture linux/amd64 --artifact-server-path /tmp/artifacts -W .github/workflows/client.yml",
+      "generate:terms": "marked -i LICENSE.md -o src/app/pages/landing/terms/terms.component.html",
+      "generate:privacy": "marked -i PRIVACY.md -o src/app/pages/landing/privacy/privacy.component.html",
+      "generate:sitemap": "node tools/sitemap-generator.js",
+      "generate:licenses": "npm-license-crawler --json dist/sign-translate/browser/licenses.json --onlyDirectDependencies --exclude ios --exclude android --exclude dist --exclude functions",
+      "generate:docs": "cd docs && npm run docs:build && mv .vitepress/dist ../dist/sign-translate/browser/docs",
+      "build:full": "npm run generate:terms && npm run generate:privacy && npm run build && npm run generate:sitemap && npm run generate:licenses && npm run generate:docs",
+      "serve:ssr:sign-translate": "node dist/sign-translate/server/server.mjs"
+    }
+  },
+  "conventions": {
+    "namingStyle": null,
+    "importStyle": null,
+    "testPattern": null,
+    "fileOrganization": null
+  },
+  "structure": {
+    "isMonorepo": false,
+    "workspaces": [],
+    "mainDirectories": [
+      "docs",
+      "src"
+    ],
+    "gitBranches": null
+  },
+  "customNotes": [],
+  "directoryMap": {
+    "android": {
+      "path": "android",
+      "purpose": null,
+      "fileCount": 10,
+      "lastAccessed": 1775225720356,
+      "keyFiles": [
+        "build.gradle",
+        "capacitor.settings.gradle",
+        "Gemfile",
+        "Gemfile.lock",
+        "gradle.properties"
+      ]
+    },
+    "docs": {
+      "path": "docs",
+      "purpose": "Documentation",
+      "fileCount": 4,
+      "lastAccessed": 1775225720357,
+      "keyFiles": [
+        "index.md",
+        "package.json",
+        "README.md"
+      ]
+    },
+    "functions": {
+      "path": "functions",
+      "purpose": null,
+      "fileCount": 8,
+      "lastAccessed": 1775225720369,
+      "keyFiles": [
+        "jest.config.js",
+        "package.json",
+        "storage.rules",
+        "tsconfig.json",
+        "tsconfig.spec.json"
+      ]
+    },
+    "ios": {
+      "path": "ios",
+      "purpose": null,
+      "fileCount": 1,
+      "lastAccessed": 1775225720369,
+      "keyFiles": []
+    },
+    "src": {
+      "path": "src",
+      "purpose": "Source code",
+      "fileCount": 7,
+      "lastAccessed": 1775225720370,
+      "keyFiles": [
+        "build-version.ts",
+        "index.html",
+        "main.server.ts",
+        "main.ts",
+        "manifest.spec.ts"
+      ]
+    },
+    "tools": {
+      "path": "tools",
+      "purpose": null,
+      "fileCount": 5,
+      "lastAccessed": 1775225720370,
+      "keyFiles": [
+        "firebase-http-push.js",
+        "generate-build-version.js",
+        "i18n-fixer.js",
+        "i18n-google.js",
+        "sitemap-generator.js"
+      ]
+    },
+    "android\\app": {
+      "path": "android\\app",
+      "purpose": "Application code",
+      "fileCount": 5,
+      "lastAccessed": 1775225720370,
+      "keyFiles": [
+        "build.gradle",
+        "capacitor.build.gradle",
+        "google-services.json"
+      ]
+    },
+    "docs\\docs": {
+      "path": "docs\\docs",
+      "purpose": "Documentation",
+      "fileCount": 0,
+      "lastAccessed": 1775225720371,
+      "keyFiles": []
+    },
+    "docs\\public": {
+      "path": "docs\\public",
+      "purpose": "Public files",
+      "fileCount": 2,
+      "lastAccessed": 1775225720371,
+      "keyFiles": [
+        "logo-dark.svg",
+        "logo-light.svg"
+      ]
+    },
+    "functions\\src": {
+      "path": "functions\\src",
+      "purpose": "Source code",
+      "fileCount": 3,
+      "lastAccessed": 1775225720372,
+      "keyFiles": [
+        "firebase-json.spec.ts",
+        "firebase.extend-spec.ts",
+        "index.ts"
+      ]
+    },
+    "ios\\App": {
+      "path": "ios\\App",
+      "purpose": "Application code",
+      "fileCount": 2,
+      "lastAccessed": 1775225720372,
+      "keyFiles": [
+        "Podfile",
+        "Podfile.lock"
+      ]
+    },
+    "src\\app": {
+      "path": "src\\app",
+      "purpose": "Application code",
+      "fileCount": 8,
+      "lastAccessed": 1775225720373,
+      "keyFiles": [
+        "app-routing.spec.ts",
+        "app.component.html",
+        "app.component.scss"
+      ]
+    },
+    "src\\assets": {
+      "path": "src\\assets",
+      "purpose": "Static assets",
+      "fileCount": 2,
+      "lastAccessed": 1775225720373,
+      "keyFiles": [
+        "robots.txt"
+      ]
+    }
+  },
+  "hotPaths": [],
+  "userDirectives": []
+}
