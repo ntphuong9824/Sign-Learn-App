@@ -1,0 +1,22 @@
+spring:
+  application:
+    name: signlearn
+  datasource:
+    url: jdbc:postgresql://${POSTGRES_HOST}:${POSTGRES_PORT}/${POSTGRES_DB}
+    username: ${POSTGRES_USER}
+    password: ${POSTGRES_PASSWORD}
+  jpa:
+    hibernate:
+      ddl-auto: ${SPRING_JPA_HIBERNATE_DDL_AUTO}
+    show-sql: ${SPRING_JPA_SHOW_SQL}
+
+server:
+  port: ${SERVER_PORT}
+
+external-api:
+  sign-mt:
+    base-url: ${SIGN_MT_API_URL}
+  firebase-functions:
+    base-url: ${FIREBASE_FUNCTIONS_URL}
+  app-check:
+    token: ${APP_CHECK_TOKEN:}
