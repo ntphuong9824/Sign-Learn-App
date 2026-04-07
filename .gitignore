@@ -77,3 +77,4 @@ bun.lock
 /backend/.omc/
 /frontend/.omc/
 /test-results.log
+/sign.mt/
