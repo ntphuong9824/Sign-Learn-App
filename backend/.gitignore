@@ -31,3 +31,7 @@ build/
 
 ### VS Code ###
 .vscode/
+
+# Local runtime logs
+spring-run.out.log
+spring-run.err.log

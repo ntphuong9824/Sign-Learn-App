@@ -31,6 +31,11 @@ export interface Landmark {
 export interface TranslateResponse {
   poseData?: PoseData;
   animationUrl?: string;
+  poseUrl?: string;
+}
+
+export interface SignWritingResponse {
+  description: string;
 }
 
 
@@ -67,3 +72,4 @@ export const SPOKEN_LANGUAGES: Language[] = [
   { code: 'fr', name: 'Tiếng Pháp' },
   { code: 'ja', name: 'Tiếng Nhật' },
 ];
+

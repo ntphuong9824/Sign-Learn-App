@@ -4,6 +4,7 @@ import { persist } from 'zustand/middleware';
 export type PoseViewerSetting = 'pose' | 'skeleton' | 'person' | 'avatar';
 
 interface SettingsState {
+  darkMode: boolean;
   receiveVideo: boolean;
   detectSign: boolean;
   animatePose: boolean;
@@ -18,6 +19,7 @@ interface SettingsState {
 }
 
 const initialState = {
+  darkMode: false,
   receiveVideo: false,
   detectSign: false,
   animatePose: false,

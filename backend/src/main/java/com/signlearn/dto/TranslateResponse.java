@@ -5,6 +5,7 @@ import java.util.List;
 public class TranslateResponse {
     private PoseData poseData;
     private String animationUrl;
+    private String poseUrl;
 
     public TranslateResponse() {}
 
@@ -13,10 +14,18 @@ public class TranslateResponse {
         this.animationUrl = animationUrl;
     }
 
+    public TranslateResponse(PoseData poseData, String animationUrl, String poseUrl) {
+        this.poseData = poseData;
+        this.animationUrl = animationUrl;
+        this.poseUrl = poseUrl;
+    }
+
     public PoseData getPoseData() { return poseData; }
     public void setPoseData(PoseData poseData) { this.poseData = poseData; }
     public String getAnimationUrl() { return animationUrl; }
     public void setAnimationUrl(String animationUrl) { this.animationUrl = animationUrl; }
+    public String getPoseUrl() { return poseUrl; }
+    public void setPoseUrl(String poseUrl) { this.poseUrl = poseUrl; }
 
     public static class PoseData {
         private List<List<Landmark>> landmarks;

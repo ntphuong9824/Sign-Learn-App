@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState } from 'react';
 import { useSpokenToSigned } from '../../hooks/useTranslation';
 import { useSpeechRecognition } from '../../hooks/useSpeechRecognition';
 import { useTextToSpeech } from '../../hooks/useTextToSpeech';
@@ -20,19 +20,15 @@ export function SpokenToSignedPage() {
   const settings = useSettingsStore();
   const poseViewer = settings.poseViewer;
 
-  useEffect(() => {
-    if (transcript) {
-      setText(transcript);
-    }
-  }, [transcript]);
+  const effectiveText = transcript?.trim() ? transcript : text;
 
   const handleTextChange = (newText: string) => {
     setText(newText);
   };
 
   const handleTranslate = () => {
-    if (!text.trim()) return;
-    mutation.mutate({ text, spoken: spokenLang, signed: signedLang });
+    if (!effectiveText.trim()) return;
+    mutation.mutate({ text: effectiveText, spoken: spokenLang, signed: signedLang });
   };
 
   const getPoseData = (): Landmark[][] => {
@@ -61,7 +57,7 @@ export function SpokenToSignedPage() {
 
         <div className="flex-1 flex flex-col">
           <textarea
-            value={text}
+            value={effectiveText}
             onChange={(e) => handleTextChange(e.target.value)}
             placeholder="Type or paste text to translate..."
             className="flex-1 w-full p-3 rounded border border-[var(--border)] bg-[var(--bg)] text-[var(--text-h)] resize-none focus:outline-none focus:ring-2 focus:ring-[var(--accent)]"
@@ -71,7 +67,7 @@ export function SpokenToSignedPage() {
 
         {/* Character count */}
         <div className="text-xs text-[var(--text)] opacity-60 mt-1 text-right">
-          {text.length} / 5000
+          {effectiveText.length} / 5000
         </div>
 
         {/* Actions */}
@@ -92,8 +88,8 @@ export function SpokenToSignedPage() {
 
           {/* Text to Speech */}
           <button
-            onClick={() => speakText(text)}
-            disabled={!text || isSpeaking}
+            onClick={() => speakText(effectiveText)}
+            disabled={!effectiveText || isSpeaking}
             className="flex items-center gap-1 px-3 py-1.5 bg-[var(--accent)] text-white rounded text-sm disabled:opacity-50"
             title="Text to Speech"
           >
@@ -106,7 +102,7 @@ export function SpokenToSignedPage() {
           {/* Translate Button */}
           <button
             onClick={handleTranslate}
-            disabled={mutation.isPending || !text.trim()}
+            disabled={mutation.isPending || !effectiveText.trim()}
             className="px-6 py-1.5 bg-[var(--accent)] text-white rounded text-sm font-medium hover:opacity-90 disabled:opacity-50"
           >
             {mutation.isPending ? 'Translating...' : 'Translate'}
@@ -154,18 +150,24 @@ export function SpokenToSignedPage() {
             )}
 
             {/* Show pose data when available */}
-            {mutation.isSuccess && poseData.length > 0 && (
+            {mutation.isSuccess && (mutation.data?.poseUrl || poseData.length > 0) && (
               <div className="w-full h-full max-w-[500px] max-h-[500px]">
-                {poseViewer === 'skeleton' && (
-                  <SkeletonPoseViewer landmarks={poseData} width={500} height={500} />
-                )}
-                {poseViewer === 'person' && (
-                  <HumanPoseViewer landmarks={poseData} width={500} height={500} />
-                )}
-                {(poseViewer === 'avatar' || poseViewer === 'pose') && (
-                  <div className="flex items-center justify-center h-full text-gray-500">
-                    Avatar view requires sprite assets
-                  </div>
+                {mutation.data?.poseUrl ? (
+                  <SkeletonPoseViewer src={mutation.data.poseUrl} />
+                ) : (
+                  <>
+                    {poseViewer === 'skeleton' && (
+                      <SkeletonPoseViewer landmarks={poseData} width={500} height={500} />
+                    )}
+                    {poseViewer === 'person' && (
+                      <HumanPoseViewer landmarks={poseData} width={500} height={500} />
+                    )}
+                    {(poseViewer === 'avatar' || poseViewer === 'pose') && (
+                      <div className="flex items-center justify-center h-full text-gray-500">
+                        Avatar view requires sprite assets
+                      </div>
+                    )}
+                  </>
                 )}
               </div>
             )}

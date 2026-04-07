@@ -4,7 +4,6 @@ import { appCheckTokenManager } from './appCheckTokenManager';
 import type {
   NormalizeResponse,
   TranslateResponse,
-  SignWritingResponse,
   TextToTextResponse,
 } from '../types/translation';
 
@@ -56,14 +55,6 @@ export const translationApi = {
     const response = await api.get<TranslateResponse>('/spoken-to-signed', {
       params: { text, spoken, signed },
     });
-    return response.data;
-  },
-
-  describeSignWriting: async (fsw: string): Promise<SignWritingResponse> => {
-    const response = await api.post<SignWritingResponse>(
-      '/signwriting/describe',
-      { fsw }
-    );
     return response.data;
   },
 

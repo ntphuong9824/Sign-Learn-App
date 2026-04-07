@@ -71,3 +71,9 @@ bun.lock
 
 .claude/
 .gitnexus
+
+# Local agent state and runtime artifacts
+/.omc/
+/backend/.omc/
+/frontend/.omc/
+/test-results.log

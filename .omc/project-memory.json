@@ -1,7 +1,7 @@
 {
   "version": "1.0.0",
-  "lastScanned": 1775225720394,
-  "projectRoot": "D:\\Project FSoft\\translate-master",
+  "lastScanned": 1775540244504,
+  "projectRoot": "D:\\Project FSoft\\sign-learn-app",
   "techStack": {
     "languages": [
       {
@@ -54,23 +54,16 @@
       "build:stats": "ng build --stats-json",
       "analyze": "webpack-bundle-analyzer dist/sign-translate/browser/stats.json",
       "pwa:assets": "pwa-asset-generator src/assets/icons/logo.svg src/assets/icons/generated/ -i src/index.html -m src/manifest.webmanifest --background white --favicon --mstile && pwa-asset-generator src/assets/icons/logo-dark.svg --dark-mode src/assets/icons/generated/ -i src/index.html --background black --splash-only",
-      "capacitor:assets": "capacitor-assets generate --verbose --ios --android --assetPath src/assets/icons --iconBackgroundColor=white --iconBackgroundColorDark=black --splashBackgroundColor=white --splashBackgroundColorDark=black --logoSplashTargetWidth=768",
       "test": "ng test --code-coverage",
       "test:chrome": "ng test --browsers=Chrome --code-coverage",
       "test:firefox": "ng test --browsers=Firefox --code-coverage",
       "test:ci": "ng test --browsers=ChromeHeadless,FirefoxHeadless --watch=false --code-coverage",
       "deploy": "firebase deploy --only=hosting",
-      "mobile:sync": "tsx tools/mobile/sync.ts",
-      "mobile:metadata": "tsx tools/mobile/metadata/metadata.ts",
-      "prepare:husky": "node -e \"require('fs').cpSync('node_modules/@sign-mt/configuration/.husky/', '.husky/', {recursive: true})\"",
       "prepare": "husky",
       "test:workflow": "act --container-architecture linux/amd64 --artifact-server-path /tmp/artifacts -W .github/workflows/client.yml",
-      "generate:terms": "marked -i LICENSE.md -o src/app/pages/landing/terms/terms.component.html",
-      "generate:privacy": "marked -i PRIVACY.md -o src/app/pages/landing/privacy/privacy.component.html",
       "generate:sitemap": "node tools/sitemap-generator.js",
-      "generate:licenses": "npm-license-crawler --json dist/sign-translate/browser/licenses.json --onlyDirectDependencies --exclude ios --exclude android --exclude dist --exclude functions",
-      "generate:docs": "cd docs && npm run docs:build && mv .vitepress/dist ../dist/sign-translate/browser/docs",
-      "build:full": "npm run generate:terms && npm run generate:privacy && npm run build && npm run generate:sitemap && npm run generate:licenses && npm run generate:docs",
+      "generate:licenses": "npm-license-crawler --json dist/sign-translate/browser/licenses.json --onlyDirectDependencies --exclude dist --exclude functions",
+      "build:full": "npm run build && npm run generate:sitemap && npm run generate:licenses",
       "serve:ssr:sign-translate": "node dist/sign-translate/server/server.mjs"
     }
   },
@@ -91,35 +84,57 @@
   },
   "customNotes": [],
   "directoryMap": {
-    "android": {
-      "path": "android",
+    "backend": {
+      "path": "backend",
       "purpose": null,
-      "fileCount": 10,
-      "lastAccessed": 1775225720356,
+      "fileCount": 9,
+      "lastAccessed": 1775540244473,
       "keyFiles": [
-        "build.gradle",
-        "capacitor.settings.gradle",
-        "Gemfile",
-        "Gemfile.lock",
-        "gradle.properties"
+        "Dockerfile",
+        "HELP.md",
+        "mvnw",
+        "mvnw.cmd",
+        "pom.xml"
       ]
+    },
+    "dist": {
+      "path": "dist",
+      "purpose": "Distribution/build output",
+      "fileCount": 0,
+      "lastAccessed": 1775540244474,
+      "keyFiles": []
     },
     "docs": {
       "path": "docs",
       "purpose": "Documentation",
-      "fileCount": 4,
-      "lastAccessed": 1775225720357,
+      "fileCount": 10,
+      "lastAccessed": 1775540244482,
       "keyFiles": [
-        "index.md",
-        "package.json",
-        "README.md"
+        "appcheck-403-fix.md",
+        "appcheck-proxy-solution.md",
+        "appcheck-token-setup.md",
+        "APPCHECK_FIX_SUMMARY.md",
+        "APPCHECK_QUICK_START.md"
+      ]
+    },
+    "frontend": {
+      "path": "frontend",
+      "purpose": null,
+      "fileCount": 16,
+      "lastAccessed": 1775540244483,
+      "keyFiles": [
+        "Dockerfile",
+        "eslint.config.js",
+        "index.html",
+        "nginx.conf",
+        "package-lock.json"
       ]
     },
     "functions": {
       "path": "functions",
       "purpose": null,
       "fileCount": 8,
-      "lastAccessed": 1775225720369,
+      "lastAccessed": 1775540244483,
       "keyFiles": [
         "jest.config.js",
         "package.json",
@@ -128,18 +143,11 @@
         "tsconfig.spec.json"
       ]
     },
-    "ios": {
-      "path": "ios",
-      "purpose": null,
-      "fileCount": 1,
-      "lastAccessed": 1775225720369,
-      "keyFiles": []
-    },
     "src": {
       "path": "src",
       "purpose": "Source code",
       "fileCount": 7,
-      "lastAccessed": 1775225720370,
+      "lastAccessed": 1775540244484,
       "keyFiles": [
         "build-version.ts",
         "index.html",
@@ -152,7 +160,7 @@
       "path": "tools",
       "purpose": null,
       "fileCount": 5,
-      "lastAccessed": 1775225720370,
+      "lastAccessed": 1775540244484,
       "keyFiles": [
         "firebase-http-push.js",
         "generate-build-version.js",
@@ -161,60 +169,40 @@
         "sitemap-generator.js"
       ]
     },
-    "android\\app": {
-      "path": "android\\app",
-      "purpose": "Application code",
-      "fileCount": 5,
-      "lastAccessed": 1775225720370,
+    "frontend\\dist": {
+      "path": "frontend\\dist",
+      "purpose": "Distribution/build output",
+      "fileCount": 3,
+      "lastAccessed": 1775540244485,
       "keyFiles": [
-        "build.gradle",
-        "capacitor.build.gradle",
-        "google-services.json"
+        "favicon.svg",
+        "icons.svg",
+        "index.html"
       ]
     },
-    "docs\\docs": {
-      "path": "docs\\docs",
-      "purpose": "Documentation",
-      "fileCount": 0,
-      "lastAccessed": 1775225720371,
+    "frontend\\node_modules": {
+      "path": "frontend\\node_modules",
+      "purpose": "Dependencies",
+      "fileCount": 1,
+      "lastAccessed": 1775540244486,
       "keyFiles": []
-    },
-    "docs\\public": {
-      "path": "docs\\public",
-      "purpose": "Public files",
-      "fileCount": 2,
-      "lastAccessed": 1775225720371,
-      "keyFiles": [
-        "logo-dark.svg",
-        "logo-light.svg"
-      ]
     },
     "functions\\src": {
       "path": "functions\\src",
       "purpose": "Source code",
       "fileCount": 3,
-      "lastAccessed": 1775225720372,
+      "lastAccessed": 1775540244486,
       "keyFiles": [
         "firebase-json.spec.ts",
         "firebase.extend-spec.ts",
         "index.ts"
       ]
     },
-    "ios\\App": {
-      "path": "ios\\App",
-      "purpose": "Application code",
-      "fileCount": 2,
-      "lastAccessed": 1775225720372,
-      "keyFiles": [
-        "Podfile",
-        "Podfile.lock"
-      ]
-    },
     "src\\app": {
       "path": "src\\app",
       "purpose": "Application code",
       "fileCount": 8,
-      "lastAccessed": 1775225720373,
+      "lastAccessed": 1775540244487,
       "keyFiles": [
         "app-routing.spec.ts",
         "app.component.html",
@@ -225,12 +213,313 @@
       "path": "src\\assets",
       "purpose": "Static assets",
       "fileCount": 2,
-      "lastAccessed": 1775225720373,
+      "lastAccessed": 1775540244487,
       "keyFiles": [
         "robots.txt"
       ]
     }
   },
-  "hotPaths": [],
+  "hotPaths": [
+    {
+      "path": "backend\\src\\main\\java\\com\\signlearn\\service\\translate\\SpokenToSignedService.java",
+      "accessCount": 15,
+      "lastAccessed": 1775547507038,
+      "type": "file"
+    },
+    {
+      "path": "backend\\src\\main\\resources\\application.yaml",
+      "accessCount": 12,
+      "lastAccessed": 1775410690761,
+      "type": "file"
+    },
+    {
+      "path": "backend\\src\\main\\java\\com\\signlearn\\service\\translate\\SignWritingService.java",
+      "accessCount": 12,
+      "lastAccessed": 1775412185772,
+      "type": "file"
+    },
+    {
+      "path": "frontend\\src\\services\\translationApi.ts",
+      "accessCount": 10,
+      "lastAccessed": 1775547383182,
+      "type": "file"
+    },
+    {
+      "path": "docs\\api-mapping-old-vs-new.md",
+      "accessCount": 8,
+      "lastAccessed": 1775371050805,
+      "type": "file"
+    },
+    {
+      "path": "backend\\src\\main\\java\\com\\signlearn\\service\\translate\\TextNormalizationService.java",
+      "accessCount": 8,
+      "lastAccessed": 1775412167921,
+      "type": "file"
+    },
+    {
+      "path": "frontend\\src",
+      "accessCount": 8,
+      "lastAccessed": 1775546883797,
+      "type": "directory"
+    },
+    {
+      "path": "docs\\testing-guide.md",
+      "accessCount": 7,
+      "lastAccessed": 1775392847679,
+      "type": "file"
+    },
+    {
+      "path": ".env.example",
+      "accessCount": 7,
+      "lastAccessed": 1775410795419,
+      "type": "file"
+    },
+    {
+      "path": "backend\\src\\main\\java\\com\\signlearn\\dto\\TranslateResponse.java",
+      "accessCount": 6,
+      "lastAccessed": 1775547453349,
+      "type": "file"
+    },
+    {
+      "path": "src",
+      "accessCount": 5,
+      "lastAccessed": 1775547256361,
+      "type": "directory"
+    },
+    {
+      "path": "backend\\src\\main\\java\\com\\signlearn\\controller\\TranslateController.java",
+      "accessCount": 5,
+      "lastAccessed": 1775547426240,
+      "type": "file"
+    },
+    {
+      "path": "backend\\src\\main\\java\\com\\signlearn\\dto\\SignWritingResponse.java",
+      "accessCount": 4,
+      "lastAccessed": 1775395814618,
+      "type": "file"
+    },
+    {
+      "path": "backend\\src\\main\\java\\com\\signlearn\\dto\\TextToTextResponse.java",
+      "accessCount": 4,
+      "lastAccessed": 1775395814640,
+      "type": "file"
+    },
+    {
+      "path": "backend\\src\\main\\java\\com\\signlearn\\config\\RestTemplateConfig.java",
+      "accessCount": 4,
+      "lastAccessed": 1775408919972,
+      "type": "file"
+    },
+    {
+      "path": "src\\app\\modules\\translate\\translate.service.ts",
+      "accessCount": 4,
+      "lastAccessed": 1775547261570,
+      "type": "file"
+    },
+    {
+      "path": "frontend\\src\\types\\translation.ts",
+      "accessCount": 4,
+      "lastAccessed": 1775547624952,
+      "type": "file"
+    },
+    {
+      "path": "frontend\\src\\pages\\translate\\SpokenToSignedPage.tsx",
+      "accessCount": 4,
+      "lastAccessed": 1775547911993,
+      "type": "file"
+    },
+    {
+      "path": "docs\\translate-api-mapping.md",
+      "accessCount": 3,
+      "lastAccessed": 1775360870603,
+      "type": "file"
+    },
+    {
+      "path": "backend\\src\\main\\java\\com\\signlearn\\service\\translate\\TextToTextService.java",
+      "accessCount": 3,
+      "lastAccessed": 1775395015128,
+      "type": "file"
+    },
+    {
+      "path": "backend\\src\\main\\java\\com\\signlearn\\dto\\NormalizeResponse.java",
+      "accessCount": 3,
+      "lastAccessed": 1775395810018,
+      "type": "file"
+    },
+    {
+      "path": "docs\\test-results-template.md",
+      "accessCount": 3,
+      "lastAccessed": 1775408827390,
+      "type": "file"
+    },
+    {
+      "path": "backend\\src\\main\\java\\com\\signlearn\\dto\\SignWritingRequest.java",
+      "accessCount": 3,
+      "lastAccessed": 1775410058678,
+      "type": "file"
+    },
+    {
+      "path": "frontend\\.env.example",
+      "accessCount": 2,
+      "lastAccessed": 1775385301600,
+      "type": "file"
+    },
+    {
+      "path": "frontend\\vite.config.ts",
+      "accessCount": 2,
+      "lastAccessed": 1775385340409,
+      "type": "file"
+    },
+    {
+      "path": "functions\\src\\text-to-text\\controller.ts",
+      "accessCount": 2,
+      "lastAccessed": 1775395032074,
+      "type": "file"
+    },
+    {
+      "path": "docs\\translation-pipeline-api-comparison.md",
+      "accessCount": 2,
+      "lastAccessed": 1775395247190,
+      "type": "file"
+    },
+    {
+      "path": "docs\\testAPI-guide.md",
+      "accessCount": 2,
+      "lastAccessed": 1775396029615,
+      "type": "file"
+    },
+    {
+      "path": "backend\\src\\main\\java\\com\\signlearn\\config\\SecurityConfig.java",
+      "accessCount": 2,
+      "lastAccessed": 1775408919947,
+      "type": "file"
+    },
+    {
+      "path": "backend\\src\\main\\java\\com\\signlearn\\controller\\HealthController.java",
+      "accessCount": 2,
+      "lastAccessed": 1775412024218,
+      "type": "file"
+    },
+    {
+      "path": "firebase.json",
+      "accessCount": 2,
+      "lastAccessed": 1775413341128,
+      "type": "file"
+    },
+    {
+      "path": "frontend\\src\\hooks\\useTranslation.ts",
+      "accessCount": 2,
+      "lastAccessed": 1775547270683,
+      "type": "file"
+    },
+    {
+      "path": "frontend\\src\\pages\\translate\\SignedToSpokenPage.tsx",
+      "accessCount": 2,
+      "lastAccessed": 1775547918623,
+      "type": "file"
+    },
+    {
+      "path": "lessons.md",
+      "accessCount": 1,
+      "lastAccessed": 1775330391481,
+      "type": "file"
+    },
+    {
+      "path": "frontend\\src\\pages\\translate\\SignWritingPage.tsx",
+      "accessCount": 1,
+      "lastAccessed": 1775360093521,
+      "type": "file"
+    },
+    {
+      "path": "backend\\pom.xml",
+      "accessCount": 1,
+      "lastAccessed": 1775360171291,
+      "type": "file"
+    },
+    {
+      "path": "backend\\src\\test\\java\\com\\signlearn\\SignlearnApplicationTests.java",
+      "accessCount": 1,
+      "lastAccessed": 1775360256106,
+      "type": "file"
+    },
+    {
+      "path": "frontend\\src\\services\\firebaseApi.ts",
+      "accessCount": 1,
+      "lastAccessed": 1775360888297,
+      "type": "file"
+    },
+    {
+      "path": "functions\\src\\gateway\\controller.ts",
+      "accessCount": 1,
+      "lastAccessed": 1775361205294,
+      "type": "file"
+    },
+    {
+      "path": "functions\\src\\text-normalization\\controller.ts",
+      "accessCount": 1,
+      "lastAccessed": 1775361205322,
+      "type": "file"
+    },
+    {
+      "path": "functions\\src\\gateway\\avatars.ts",
+      "accessCount": 1,
+      "lastAccessed": 1775361214986,
+      "type": "file"
+    },
+    {
+      "path": "test-api.sh",
+      "accessCount": 1,
+      "lastAccessed": 1775375186337,
+      "type": "file"
+    },
+    {
+      "path": "test-api.bat",
+      "accessCount": 1,
+      "lastAccessed": 1775375980241,
+      "type": "file"
+    },
+    {
+      "path": "docs\\translate-postman-collection.json",
+      "accessCount": 1,
+      "lastAccessed": 1775376344104,
+      "type": "file"
+    },
+    {
+      "path": "docker-compose.yml",
+      "accessCount": 1,
+      "lastAccessed": 1775384637430,
+      "type": "file"
+    },
+    {
+      "path": "backend\\src\\main\\java\\com\\signlearn\\config\\CorsConfig.java",
+      "accessCount": 1,
+      "lastAccessed": 1775384713994,
+      "type": "file"
+    },
+    {
+      "path": "backend\\src\\main\\java\\com\\signlearn\\service\\translate\\MockTranslateService.java",
+      "accessCount": 1,
+      "lastAccessed": 1775386315779,
+      "type": "file"
+    },
+    {
+      "path": "backend\\src\\main\\resources\\application-dev.yaml",
+      "accessCount": 1,
+      "lastAccessed": 1775386501557,
+      "type": "file"
+    },
+    {
+      "path": "docker-compose.dev.yml",
+      "accessCount": 1,
+      "lastAccessed": 1775392554341,
+      "type": "file"
+    },
+    {
+      "path": "functions\\src\\gateway\\spoken-to-signed.ts",
+      "accessCount": 1,
+      "lastAccessed": 1775395032091,
+      "type": "file"
+    }
+  ],
   "userDirectives": []
 }

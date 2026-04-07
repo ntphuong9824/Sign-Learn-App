@@ -86,16 +86,16 @@ public class SpokenToSignedService {
             MediaType contentType = upstreamResponse.getHeaders().getContentType();
             if (contentType != null && "application".equalsIgnoreCase(contentType.getType())
                     && "pose".equalsIgnoreCase(contentType.getSubtype())) {
-                log.warn("Upstream spoken-to-signed returned binary pose payload; returning animation URL fallback");
-                URI videoUri = UriComponentsBuilder
-                        .fromUriString(firebaseFunctionsUrl + "/spoken_text_to_signed_video")
+                log.info("Upstream spoken-to-signed returned binary pose payload; returning pose URL");
+                URI poseUri = UriComponentsBuilder
+                        .fromUriString(firebaseFunctionsUrl + "/spoken_text_to_signed_pose")
                         .queryParam("text", text)
                         .queryParam("spoken", spoken)
                         .queryParam("signed", signed)
                         .encode(StandardCharsets.UTF_8)
                         .build()
                         .toUri();
-                return new TranslateResponse(null, videoUri.toString());
+                return new TranslateResponse(null, null, poseUri.toString());
             }
 
             log.error("Upstream spoken-to-signed returned unsupported payload type: {}", contentType);

@@ -15,3 +15,4 @@
 - When initializing a new GitHub presence for an existing workspace, add a root `README.md` and a basic `.github/ISSUE_TEMPLATE.md` so the repository feels ready even before workflows are customized.
 - If the goal is a truly fresh GitHub repo, remove the entire `.github/` folder after creating any temporary templates or workflows you no longer want; otherwise the repo still carries old automation and metadata.
 - Before adding a Git remote, run `git remote -v` first; if `origin` is absent, add it once, and if it already exists, update it instead of creating duplicate remotes.
+- A freshly initialized Git repo cannot be pushed until it has at least one commit; create the initial commit first, then run `git push -u origin main` to set upstream tracking.
