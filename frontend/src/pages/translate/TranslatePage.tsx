@@ -17,6 +17,31 @@ interface TranslationHistoryItem {
 
 const MAX_TEXT_LENGTH = 5000;
 
+const SPOKEN_TO_SIGN_COMPAT: Record<string, string[]> = {
+  en: ['ase', 'bfi'],
+  vi: ['vnsl'],
+  de: ['gsg'],
+  fr: ['fsl'],
+  ja: ['jsl'],
+};
+
+const SIGN_TO_SPOKEN_COMPAT: Record<string, string[]> = {
+  ase: ['en'],
+  bfi: ['en'],
+  gsg: ['de'],
+  fsl: ['fr'],
+  jsl: ['ja'],
+  vnsl: ['vi'],
+};
+
+const QUICK_PHRASES_BY_SPOKEN: Record<string, string[]> = {
+  en: ['Hello', 'Thank you', 'Good morning', 'How are you?', 'Nice to meet you', 'I need help'],
+  de: ['Hallo', 'Danke', 'Guten Morgen', 'Wie geht es dir?', 'Freut mich', 'Ich brauche Hilfe'],
+  fr: ['Bonjour', 'Merci', 'Bon matin', 'Comment ca va ?', 'Ravi de vous rencontrer', "J'ai besoin d'aide"],
+  ja: ['こんにちは', 'ありがとう', 'おはよう', 'お元気ですか', 'はじめまして', '助けが必要です'],
+  vi: ['Xin chào', 'Cảm ơn', 'Chào buổi sáng', 'Bạn khoẻ không?', 'Rất vui được gặp bạn', 'Tôi cần giúp đỡ'],
+};
+
 export function TranslatePage() {
   const [sourceLanguage, setSourceLanguage] = useState('en');
   const [targetLanguage, setTargetLanguage] = useState('ase');
@@ -38,21 +63,17 @@ export function TranslatePage() {
   const languages = [
     { code: 'en', name: 'English' },
     { code: 'vi', name: 'Tiếng Việt' },
-    { code: 'es', name: 'Español' },
     { code: 'fr', name: 'Français' },
     { code: 'de', name: 'Deutsch' },
     { code: 'ja', name: '日本語' },
-    { code: 'ko', name: '한국어' },
-    { code: 'zh', name: '中文' },
   ];
 
   const signLanguages = [
     { code: 'ase', name: 'American Sign Language (ASL)' },
-    { code: 'bsl', name: 'British Sign Language (BSL)' },
-    { code: 'auslan', name: 'Australian Sign Language (Auslan)' },
+    { code: 'bfi', name: 'British Sign Language (BSL)' },
+    { code: 'gsg', name: 'German Sign Language (DGS)' },
+    { code: 'fsl', name: 'French Sign Language (LSF)' },
     { code: 'jsl', name: 'Japanese Sign Language (JSL)' },
-    { code: 'csl', name: 'Chinese Sign Language (CSL)' },
-    { code: 'isl', name: 'International Sign Language (ISL)' },
     { code: 'vnsl', name: 'Vietnamese Sign Language (VNSL)' },
   ];
 
@@ -104,10 +125,35 @@ export function TranslatePage() {
     }
   }, [transcript]);
 
+  const getTargetOptionsForSource = (sourceCode: string) => {
+    const sourceIsSign = signLanguages.some((lang) => lang.code === sourceCode);
+
+    if (sourceIsSign) {
+      const allowedSpoken = SIGN_TO_SPOKEN_COMPAT[sourceCode];
+      return allowedSpoken && allowedSpoken.length > 0
+        ? languages.filter((lang) => allowedSpoken.includes(lang.code))
+        : languages;
+    }
+
+    const allowedSigns = SPOKEN_TO_SIGN_COMPAT[sourceCode];
+    return allowedSigns && allowedSigns.length > 0
+      ? signLanguages.filter((lang) => allowedSigns.includes(lang.code))
+      : signLanguages;
+  };
+
+  const getValidTargetForSource = (sourceCode: string, preferredTarget: string) => {
+    const options = getTargetOptionsForSource(sourceCode);
+    if (options.some((lang) => lang.code === preferredTarget)) {
+      return preferredTarget;
+    }
+    return options[0]?.code ?? preferredTarget;
+  };
+
   const handleSwapLanguages = () => {
-    const temp = sourceLanguage;
-    setSourceLanguage(targetLanguage);
-    setTargetLanguage(temp);
+    const nextSource = targetLanguage;
+    const nextTarget = getValidTargetForSource(nextSource, sourceLanguage);
+    setSourceLanguage(nextSource);
+    setTargetLanguage(nextTarget);
   };
 
   const handleCameraToggle = () => {
@@ -145,6 +191,14 @@ export function TranslatePage() {
   const isSignLanguage = (code: string) => {
     return signLanguages.some(sl => sl.code === code);
   };
+
+  const targetOptions = getTargetOptionsForSource(sourceLanguage);
+
+  const quickPhraseLanguageCode = isSignLanguage(sourceLanguage)
+    ? (SIGN_TO_SPOKEN_COMPAT[sourceLanguage]?.[0] ?? 'en')
+    : sourceLanguage;
+
+  const quickPhrases = QUICK_PHRASES_BY_SPOKEN[quickPhraseLanguageCode] ?? QUICK_PHRASES_BY_SPOKEN.en;
 
   return (
     <div className="w-full min-h-screen bg-background flex flex-col relative overflow-x-hidden">
@@ -249,7 +303,11 @@ export function TranslatePage() {
             <div className="flex-1">
               <select
                 value={sourceLanguage}
-                onChange={(e) => setSourceLanguage(e.target.value)}
+                onChange={(e) => {
+                  const nextSource = e.target.value;
+                  setSourceLanguage(nextSource);
+                  setTargetLanguage((current) => getValidTargetForSource(nextSource, current));
+                }}
                 className="w-full px-4 py-2 bg-input-background border border-border rounded-lg focus:outline-none focus:ring-2 focus:ring-ring"
               >
                 <optgroup label="Spoken Languages">
@@ -285,20 +343,11 @@ export function TranslatePage() {
                 onChange={(e) => setTargetLanguage(e.target.value)}
                 className="w-full px-4 py-2 bg-input-background border border-border rounded-lg focus:outline-none focus:ring-2 focus:ring-ring"
               >
-                <optgroup label="Sign Languages">
-                  {signLanguages.map((lang) => (
-                    <option key={lang.code} value={lang.code}>
-                      {lang.name}
-                    </option>
-                  ))}
-                </optgroup>
-                <optgroup label="Spoken Languages">
-                  {languages.map((lang) => (
-                    <option key={lang.code} value={lang.code}>
-                      {lang.name}
-                    </option>
-                  ))}
-                </optgroup>
+                {targetOptions.map((lang) => (
+                  <option key={lang.code} value={lang.code}>
+                    {lang.name}
+                  </option>
+                ))}
               </select>
             </div>
           </div>
@@ -514,15 +563,7 @@ export function TranslatePage() {
           <div className="mt-6">
             <h3 className="text-muted-foreground mb-3">Quick phrases</h3>
             <div className="flex flex-wrap gap-2">
-              {[
-                'Hello',
-                'Thank you',
-                'Good morning',
-                'How are you?',
-                'Nice to meet you',
-                'I need help',
-                'Where is the bathroom?',
-              ].map((phrase) => (
+              {quickPhrases.map((phrase) => (
                 <button
                   key={phrase}
                   onClick={() => setInputText(phrase)}
