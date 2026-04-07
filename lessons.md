@@ -16,3 +16,7 @@
 - If the goal is a truly fresh GitHub repo, remove the entire `.github/` folder after creating any temporary templates or workflows you no longer want; otherwise the repo still carries old automation and metadata.
 - Before adding a Git remote, run `git remote -v` first; if `origin` is absent, add it once, and if it already exists, update it instead of creating duplicate remotes.
 - A freshly initialized Git repo cannot be pushed until it has at least one commit; create the initial commit first, then run `git push -u origin main` to set upstream tracking.
+- For skeleton playback parity with sign.mt, set `autoplay="true"` on the `pose-viewer` custom element in React; without it, playback may stop after one run.
+- If `pose-viewer` still stops after one pass, add a replay watchdog in the wrapper component that remounts on `ended`/`error` and near-end playback state.
+- For smoother replay, prefer the custom element's native `loop`/`play()` behavior over remounting; remounts cause the visible blink between runs.
+- For React wrappers around web components, prefer imperative property assignment and native event listeners when JSX props don’t reliably trigger behavior (e.g. `ended$`/`play()` on `pose-viewer`).

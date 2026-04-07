@@ -19,11 +19,40 @@ interface PoseViewerProps {
 
 export function PoseViewer({ src, background, className = '' }: PoseViewerProps) {
   const containerRef = useRef<HTMLDivElement>(null);
+  const viewerRef = useRef<HTMLPoseViewerElement | null>(null);
   const [loaded, setLoaded] = useState(false);
 
   useEffect(() => {
     definePoseViewerElement().then(() => setLoaded(true));
   }, []);
+
+  useEffect(() => {
+    const viewer = viewerRef.current;
+    if (!loaded || !viewer) {
+      return;
+    }
+
+    viewer.autoplay = true;
+    viewer.loop = true;
+    viewer.aspectRatio = 1;
+    if (background !== undefined) {
+      viewer.background = background;
+    }
+    if (src !== undefined) {
+      viewer.src = src;
+    }
+
+    const handleEnded = () => {
+      viewer.currentTime = 0;
+      void viewer.play();
+    };
+
+    viewer.addEventListener('ended$', handleEnded);
+
+    return () => {
+      viewer.removeEventListener('ended$', handleEnded);
+    };
+  }, [loaded, src, background]);
 
   if (!loaded) {
     return <div className={`p-4 text-center ${className}`}>Loading pose viewer...</div>;
@@ -33,25 +62,10 @@ export function PoseViewer({ src, background, className = '' }: PoseViewerProps)
   return (
     <div ref={containerRef} className={className}>
       {/* @ts-expect-error - pose-viewer is a custom element */}
-      <pose-viewer src={src} background={background} />
+      <pose-viewer
+        ref={viewerRef}
+      />
     </div>
   );
 }
 
-export function usePoseViewerFPS(viewerRef: React.RefObject<HTMLElement>) {
-  const [fps, setFps] = useState(30);
-
-  useEffect(() => {
-    const getFps = async () => {
-      if (viewerRef.current && 'getPose' in viewerRef.current) {
-        const pose = await (viewerRef.current as unknown as { getPose: () => Promise<{ body: { fps: number } }> }).getPose();
-        if (pose?.body?.fps) {
-          setFps(pose.body.fps);
-        }
-      }
-    };
-    getFps();
-  }, [viewerRef]);
-
-  return fps;
-}
