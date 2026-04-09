@@ -49,6 +49,7 @@ interface SpeechSynthesisVoice {
   voiceURI: string;
 }
 
+// eslint-disable-next-line @typescript-eslint/no-unused-vars
 interface SpeechSynthesisUtterance extends EventTarget {
   text: string;
   lang: string;

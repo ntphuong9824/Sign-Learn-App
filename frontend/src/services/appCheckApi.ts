@@ -15,14 +15,20 @@ export interface AppCheckStatusResponse {
 
 /**
  * Service for managing AppCheck tokens between client and backend
+ * Supports cancellation via AbortController
  */
 export const appCheckApi = {
   /**
    * Send AppCheck token to backend for caching
    * @param token The AppCheck token from Firebase
-   * @param source Source identifier (e.g., 'angular', 'react', 'mobile')
+   * @param source Source identifier (e.g., 'react', 'mobile')
+   * @param signal Optional AbortSignal for cancellation
    */
-  sendToken: async (token: string, source: string = 'react'): Promise<AppCheckTokenResponse> => {
+  sendToken: async (
+    token: string,
+    source: string = 'react',
+    signal?: AbortSignal
+  ): Promise<AppCheckTokenResponse> => {
     const response = await axios.post<AppCheckTokenResponse>(
       `${API_BASE_URL}/appcheck/token`,
       { token },
@@ -31,6 +37,7 @@ export const appCheckApi = {
           'X-Client-Source': source,
           'Content-Type': 'application/json',
         },
+        signal,
       }
     );
     return response.data;
@@ -38,20 +45,24 @@ export const appCheckApi = {
 
   /**
    * Check if backend has a valid AppCheck token
+   * @param signal Optional AbortSignal for cancellation
    */
-  checkStatus: async (): Promise<AppCheckStatusResponse> => {
+  checkStatus: async (signal?: AbortSignal): Promise<AppCheckStatusResponse> => {
     const response = await axios.get<AppCheckStatusResponse>(
-      `${API_BASE_URL}/appcheck/status`
+      `${API_BASE_URL}/appcheck/status`,
+      { signal }
     );
     return response.data;
   },
 
   /**
    * Clear all cached tokens from backend
+   * @param signal Optional AbortSignal for cancellation
    */
-  clearTokens: async (): Promise<AppCheckTokenResponse> => {
+  clearTokens: async (signal?: AbortSignal): Promise<AppCheckTokenResponse> => {
     const response = await axios.delete<AppCheckTokenResponse>(
-      `${API_BASE_URL}/appcheck/token`
+      `${API_BASE_URL}/appcheck/token`,
+      { signal }
     );
     return response.data;
   },

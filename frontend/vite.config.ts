@@ -13,4 +13,20 @@ export default defineConfig({
       },
     },
   },
+  optimizeDeps: {
+    include: [
+      '@mediapipe/tasks-vision',
+    ],
+  },
+  build: {
+    rollupOptions: {
+      output: {
+        manualChunks(id) {
+          if (id.includes('@mediapipe')) {
+            return 'mediapipe';
+          }
+        },
+      },
+    },
+  },
 })

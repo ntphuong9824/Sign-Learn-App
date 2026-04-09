@@ -1,0 +1,3 @@
+1. Trước khi kết thúc hãy cập nhật claude.md với những gì hoàn thành ở trong section này. Trạng thái cập nhật của từng phần, bước tiếp theo cần làm trong cái section sau. Những quyết đị nh quan trọng đã đưa ra và lý do tại sao.
+2. Đọc claude.md và cho tôi biết dự án đang ở đâu. Các bước tiếp theo là gì và có gì cần chú ý hay không.
+3. Dựa trên claude.md và trạng thái hiện tại của dự án, hãy lên kế hoạch cho section hôm nay, ưu tiên những gì và làm theo thứ tự nào.

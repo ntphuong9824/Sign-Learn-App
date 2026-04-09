@@ -1,11 +1,8 @@
 # Lessons
 
-- Removing legal/docs links from component data must be mirrored in templates; Angular template type-checking will fail if stale fields are referenced.
 - When deleting route-backed pages, also remove related hosting rewrites, sitemap entries, and UI links to avoid dead navigation paths.
-- For shared banner UI, remove both template usage and standalone component imports before deleting component files to keep Angular compile checks clean.
 - When deleting public pages (like About/Contribute), also update metadata generators and SEO/sitemap sources so app-store URLs and indexed paths do not point to removed routes.
 - When removing header/footer wrappers on mobile, preserve functional controls by moving them into `ion-content` instead of deleting those controls outright.
-- To keep only one page in Angular, flatten `app.routes` directly to that component and redirect `**` to it before deleting other page folders.
 - After deleting a UI block, remove matching standalone imports/icons and SCSS sections in the same commit to avoid drift and stale style debt.
 - After removing a feature component from templates, also clean global selectors (like `app-send-feedback` in theme styles) to avoid hidden dead references.
 - Hardcoded test data (FAKE_WORDS) in components can mask missing functionality. When features rely on fake data, the app appears to work but actually returns the same static result every time. Always check if component behavior is real or mocked.

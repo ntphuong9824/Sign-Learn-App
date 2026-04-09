@@ -48,7 +48,6 @@ export function AvatarPoseViewer({ landmarks, width = 640, height = 480 }: Avata
     }
 
     // Body (simplified avatar representation)
-    currentLandmarks[11]; // shoulder reference
     const rightShoulder = currentLandmarks[12];
     const leftShoulder = currentLandmarks[11];
     const rightElbow = currentLandmarks[14];

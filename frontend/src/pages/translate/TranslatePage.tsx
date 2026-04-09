@@ -2,8 +2,12 @@ import { useState, useEffect, useRef } from 'react';
 import { useSpokenToSigned } from '../../hooks/useTranslation';
 import { useSpeechRecognition } from '../../hooks/useSpeechRecognition';
 import { useTextToSpeech } from '../../hooks/useTextToSpeech';
+import { useCamera } from '../../hooks/useCamera';
+import { usePoseDetection } from '../../hooks/usePoseDetection';
 import { SkeletonPoseViewer } from '../../components/translate/SkeletonPoseViewer';
+import { PoseCanvas } from '../../components/PoseCanvas';
 import { useSettingsStore } from '../../store/settingsStore';
+import type { CombinedPoseResult } from '../../services/mediaPipeService';
 import './TranslatePage.css';
 
 interface TranslationHistoryItem {
@@ -15,7 +19,14 @@ interface TranslationHistoryItem {
   timestamp: Date;
 }
 
+interface SignedToSpokenResult {
+  text: string;
+  glosses: string[];
+  timestamp: number;
+}
+
 const MAX_TEXT_LENGTH = 5000;
+const MAX_POSE_FRAMES = 100;
 
 const SPOKEN_TO_SIGN_COMPAT: Record<string, string[]> = {
   en: ['ase', 'bfi'],
@@ -42,14 +53,33 @@ const QUICK_PHRASES_BY_SPOKEN: Record<string, string[]> = {
   vi: ['Xin chào', 'Cảm ơn', 'Chào buổi sáng', 'Bạn khoẻ không?', 'Rất vui được gặp bạn', 'Tôi cần giúp đỡ'],
 };
 
+const SIGN_LANGUAGE_CODES = ['ase', 'bfi', 'gsg', 'fsl', 'jsl', 'vnsl'];
+
+const isSignLanguage = (code: string): boolean => {
+  return SIGN_LANGUAGE_CODES.includes(code);
+};
+
 export function TranslatePage() {
   const [sourceLanguage, setSourceLanguage] = useState('en');
   const [targetLanguage, setTargetLanguage] = useState('ase');
   const [inputText, setInputText] = useState('');
-  const [isRecording, setIsRecording] = useState(false);
   const [showHistory, setShowHistory] = useState(false);
   const [history, setHistory] = useState<TranslationHistoryItem[]>([]);
-  const [stream, setStream] = useState<MediaStream | null>(null);
+
+  // Signed-to-spoken state
+  const [uploadedVideo, setUploadedVideo] = useState<string | null>(null);
+  const [isProcessingSigned, setIsProcessingSigned] = useState(false);
+  const [signedToSpokenResult, setSignedToSpokenResult] = useState<SignedToSpokenResult | null>(null);
+  const [signedToSpokenError, setSignedToSpokenError] = useState<string | null>(null);
+  const [isCameraActive, setIsCameraActive] = useState(false); // Camera only active when user clicks
+  const [uploadedVideoPose, setUploadedVideoPose] = useState<CombinedPoseResult | null>(null); // Pose from uploaded video
+
+  // Circular buffer for pose history to avoid memory leaks
+  const poseHistoryBufferRef = useRef<CombinedPoseResult[]>(new Array(MAX_POSE_FRAMES));
+  const poseHistoryIndexRef = useRef(0);
+  const poseHistoryCountRef = useRef(0);
+  const [poseHistory, setPoseHistory] = useState<CombinedPoseResult[]>([]);
+
   const videoRef = useRef<HTMLVideoElement>(null);
 
   const spokenToSigned = useSpokenToSigned();
@@ -57,6 +87,23 @@ export function TranslatePage() {
     lang: sourceLanguage,
   });
   const { speak, isSpeaking } = useTextToSpeech({ lang: sourceLanguage });
+
+  // Camera hook for signed-to-spoken
+  const { isStreaming, error: cameraError, startCamera, stopCamera, videoRef: cameraVideoRef } = useCamera({
+    facingMode: 'user',
+    width: { min: 1280, ideal: 1280 },
+    height: { min: 720, ideal: 720 },
+    frameRate: 30,
+  });
+
+  // Pose detection hook for signed-to-spoken
+  const { isModelLoaded, error: poseError, detectPose, detectPoseFromVideo, stopDetection, currentPose } = usePoseDetection({
+    poseModelType: 'full',
+    handsModelComplexity: 1,
+    minDetectionConfidence: 0.5,
+    minTrackingConfidence: 0.5,
+    targetFps: 30,
+  });
 
   const settings = useSettingsStore();
 
@@ -86,37 +133,152 @@ export function TranslatePage() {
     }
   }, [settings.darkMode]);
 
-  // Webcam effect
+  // Stop camera when switching away from sign language
   useEffect(() => {
-    if (isRecording && videoRef.current) {
-      navigator.mediaDevices.getUserMedia({ video: true, audio: false })
-        .then((mediaStream) => {
-          setStream(mediaStream);
-          if (videoRef.current) {
-            videoRef.current.srcObject = mediaStream;
-          }
-        })
-        .catch((err) => {
-          console.error('Error accessing webcam:', err);
-          setIsRecording(false);
-        });
-    } else if (!isRecording && stream) {
-      stream.getTracks().forEach(track => track.stop());
-      setStream(null);
-      if (videoRef.current) {
-        videoRef.current.srcObject = null;
-      }
+    if (!isSignLanguage(sourceLanguage)) {
+      setIsCameraActive(false);
+      stopCamera();
+      stopDetection();
     }
-  }, [isRecording]);
+  }, [sourceLanguage, stopCamera, stopDetection]);
 
-  // Cleanup webcam on unmount
+  // Start pose detection when camera is active and source is sign language
   useEffect(() => {
-    return () => {
-      if (stream) {
-        stream.getTracks().forEach(track => track.stop());
+    if (!isSignLanguage(sourceLanguage) || !isCameraActive) {
+      return;
+    }
+
+    if (!isModelLoaded || !cameraVideoRef.current) {
+      return;
+    }
+
+    const video = cameraVideoRef.current;
+
+    // Wait for video to have valid dimensions before starting detection
+    const checkVideoReady = () => {
+      if (video.videoWidth > 0 && video.videoHeight > 0) {
+        detectPoseFromVideo(video, (pose) => {
+          // Use circular buffer to avoid creating new arrays every frame
+          const buffer = poseHistoryBufferRef.current;
+          const index = poseHistoryIndexRef.current;
+
+          // Store pose in circular buffer
+          buffer[index] = pose;
+
+          // Update index (wrap around)
+          poseHistoryIndexRef.current = (index + 1) % MAX_POSE_FRAMES;
+
+          // Update count (up to max)
+          if (poseHistoryCountRef.current < MAX_POSE_FRAMES) {
+            poseHistoryCountRef.current++;
+          }
+
+          // Update state with current buffer contents
+          setPoseHistory(() => {
+            if (poseHistoryCountRef.current < MAX_POSE_FRAMES) {
+              // Buffer not full yet, return slice from 0 to count
+              return buffer.slice(0, poseHistoryCountRef.current);
+            }
+            // Buffer full, return reordered array (oldest first)
+            const result = new Array(MAX_POSE_FRAMES);
+            for (let i = 0; i < MAX_POSE_FRAMES; i++) {
+              result[i] = buffer[(index + i) % MAX_POSE_FRAMES];
+            }
+            return result;
+          });
+        });
       }
     };
-  }, [stream]);
+
+    // Check immediately and also listen for loadeddata event
+    checkVideoReady();
+    video.addEventListener('loadeddata', checkVideoReady);
+
+    return () => {
+      video.removeEventListener('loadeddata', checkVideoReady);
+      stopDetection();
+    };
+  }, [sourceLanguage, isModelLoaded, cameraVideoRef, detectPoseFromVideo, stopDetection]);
+
+  // Cleanup object URL on unmount or when video changes
+  useEffect(() => {
+    return () => {
+      if (uploadedVideo) {
+        URL.revokeObjectURL(uploadedVideo);
+      }
+    };
+  }, [uploadedVideo]);
+
+  // Run pose detection on uploaded video
+  useEffect(() => {
+    if (!uploadedVideo || !videoRef.current || !isModelLoaded) {
+      return;
+    }
+
+    const video = videoRef.current;
+    let animationFrameId: number | null = null;
+    let isProcessing = true;
+
+    const processVideoFrame = async () => {
+      if (!isProcessing || video.paused || video.ended) {
+        return;
+      }
+
+      try {
+        const pose = await detectPose(video);
+        if (pose && isProcessing) {
+          setUploadedVideoPose(pose);
+        }
+      } catch (error) {
+        console.error('Error detecting pose from uploaded video:', error);
+      }
+
+      if (isProcessing && !video.paused && !video.ended) {
+        animationFrameId = requestAnimationFrame(processVideoFrame);
+      }
+    };
+
+    // Start processing when video is ready
+    const handleVideoPlay = () => {
+      isProcessing = true;
+      processVideoFrame();
+    };
+
+    const handleVideoPause = () => {
+      isProcessing = false;
+      if (animationFrameId) {
+        cancelAnimationFrame(animationFrameId);
+        animationFrameId = null;
+      }
+    };
+
+    const handleVideoEnded = () => {
+      isProcessing = false;
+      if (animationFrameId) {
+        cancelAnimationFrame(animationFrameId);
+        animationFrameId = null;
+      }
+    };
+
+    video.addEventListener('play', handleVideoPlay);
+    video.addEventListener('pause', handleVideoPause);
+    video.addEventListener('ended', handleVideoEnded);
+
+    // If video is already playing, start processing
+    if (!video.paused) {
+      processVideoFrame();
+    }
+
+    return () => {
+      isProcessing = false;
+      if (animationFrameId) {
+        cancelAnimationFrame(animationFrameId);
+      }
+      video.removeEventListener('play', handleVideoPlay);
+      video.removeEventListener('pause', handleVideoPause);
+      video.removeEventListener('ended', handleVideoEnded);
+    };
+  }, [uploadedVideo, isModelLoaded, detectPose]);
 
   // Transcript effect
   useEffect(() => {
@@ -156,12 +318,103 @@ export function TranslatePage() {
     setTargetLanguage(nextTarget);
   };
 
-  const handleCameraToggle = () => {
-    setIsRecording(!isRecording);
+  // Handle video file upload for signed-to-spoken
+  const handleFileSelect = (file: File) => {
+    // File validation constraints
+    const MAX_FILE_SIZE = 100 * 1024 * 1024; // 100MB
+    const ALLOWED_TYPES = ['video/mp4', 'video/webm', 'video/ogg', 'video/quicktime'];
+
+    // Validate file type
+    if (!ALLOWED_TYPES.includes(file.type)) {
+      setSignedToSpokenError('Invalid file type. Please upload MP4, WebM, OGG, or MOV.');
+      return;
+    }
+
+    // Validate file size
+    if (file.size > MAX_FILE_SIZE) {
+      setSignedToSpokenError('File too large. Maximum size is 100MB.');
+      return;
+    }
+
+    // Stop camera and detection when uploading video
+    if (isStreaming) {
+      setIsCameraActive(false);
+      stopCamera();
+      stopDetection();
+    }
+
+    // Revoke previous URL if exists
+    if (uploadedVideo) {
+      URL.revokeObjectURL(uploadedVideo);
+    }
+
+    const url = URL.createObjectURL(file);
+    setUploadedVideo(url);
+
+    // Reset circular buffer
+    poseHistoryBufferRef.current = new Array(MAX_POSE_FRAMES);
+    poseHistoryIndexRef.current = 0;
+    poseHistoryCountRef.current = 0;
+    setPoseHistory([]);
+
+    setSignedToSpokenResult(null);
+    setSignedToSpokenError(null);
+  };
+
+  // Toggle camera on/off
+  const handleToggleCamera = async () => {
+    if (isStreaming) {
+      setIsCameraActive(false);
+      stopCamera();
+      stopDetection();
+    } else {
+      setIsCameraActive(true);
+      await startCamera();
+    }
+  };
+
+  // Start camera when clicking on video area
+  const handleVideoAreaClick = async () => {
+    if (!isStreaming && !uploadedVideo && isSignLanguage(sourceLanguage)) {
+      setIsCameraActive(true);
+      await startCamera();
+    }
+  };
+
+  // Handle signed-to-spoken translation
+  const handleSignedToSpokenTranslate = async () => {
+    if (poseHistory.length === 0) {
+      return;
+    }
+
+    setIsProcessingSigned(true);
+    setSignedToSpokenError(null);
+
+    try {
+      // TODO: Send pose data to backend for translation
+      // For now, use placeholder result
+      await new Promise(resolve => setTimeout(resolve, 1000));
+
+      setSignedToSpokenResult({
+        text: 'Hello, how are you?',
+        glosses: ['HELLO', 'YOU', 'HOW'],
+        timestamp: Date.now(),
+      });
+    } catch (error) {
+      const errorMessage = error instanceof Error ? error.message : 'Translation failed';
+      setSignedToSpokenError(errorMessage);
+      console.error('Signed-to-spoken translation error:', error);
+    } finally {
+      setIsProcessingSigned(false);
+    }
   };
 
   const handleTranslate = () => {
-    if (inputText.trim()) {
+    if (isSignLanguage(sourceLanguage)) {
+      // Signed-to-spoken translation
+      handleSignedToSpokenTranslate();
+    } else if (inputText.trim()) {
+      // Spoken-to-signed translation
       const newHistoryItem: TranslationHistoryItem = {
         id: Date.now().toString(),
         sourceText: inputText,
@@ -186,10 +439,6 @@ export function TranslatePage() {
 
   const handleClearHistory = () => {
     setHistory([]);
-  };
-
-  const isSignLanguage = (code: string) => {
-    return signLanguages.some(sl => sl.code === code);
   };
 
   const targetOptions = getTargetOptionsForSource(sourceLanguage);
@@ -358,28 +607,105 @@ export function TranslatePage() {
             <div className="bg-card border border-border rounded-lg overflow-hidden flex flex-col">
               <div className="flex-1 p-6">
                 {isSignLanguage(sourceLanguage) ? (
-                  // Video input for sign language
+                  // Video input for sign language (signed-to-spoken)
                   <div className="h-full min-h-[300px] flex flex-col items-center justify-center bg-muted rounded-lg overflow-hidden relative">
-                    {isRecording ? (
+                    {!uploadedVideo ? (
                       <>
+                        {/* Hidden video element for MediaPipe */}
                         <video
-                          ref={videoRef}
+                          ref={cameraVideoRef}
                           autoPlay
                           playsInline
                           muted
-                          className="w-full h-full object-cover"
+                          className="hidden"
                         />
-                        <div className="absolute top-4 left-4 flex items-center gap-2 bg-destructive/90 text-destructive-foreground px-3 py-1 rounded-full">
-                          <div className="w-2 h-2 bg-white rounded-full animate-pulse"></div>
-                          <span className="text-sm font-medium">Recording</span>
+
+                        {/* Canvas for visualization - clickable to start camera */}
+                        <div
+                          onClick={handleVideoAreaClick}
+                          className="w-full h-full rounded-lg bg-black relative cursor-pointer"
+                        >
+                          <PoseCanvas
+                            pose={currentPose}
+                            width={640}
+                            height={480}
+                            drawVideo={isStreaming}
+                            drawPose={isStreaming}
+                            videoElement={cameraVideoRef.current}
+                            className="w-full h-full rounded-lg"
+                          />
+
+                          {/* Start camera overlay when not streaming */}
+                          {!isStreaming && (
+                            <div className="absolute inset-0 flex flex-col items-center justify-center bg-black/50">
+                              <svg className="w-16 h-16 text-white mb-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 10l4.553-2.276A1 1 0 0121 8.618v6.764a1 1 0 01-1.447.894L15 14M5 18h8a2 2 0 002-2V8a2 2 0 00-2-2H5a2 2 0 00-2 2v8a2 2 0 002 2z" />
+                              </svg>
+                              <p className="text-white text-sm font-medium">Click to start camera</p>
+                            </div>
+                          )}
                         </div>
+
+                        {/* Status overlay */}
+                        {isStreaming && (
+                          <div className="absolute top-4 left-4 flex items-center gap-2">
+                            <div className="flex items-center gap-2 bg-green-500/90 text-white px-3 py-1 rounded-full">
+                              <div className="w-2 h-2 bg-white rounded-full animate-pulse"></div>
+                              <span className="text-sm font-medium">Live</span>
+                            </div>
+                          </div>
+                        )}
+
+                        {/* Error overlay */}
+                        {cameraError && (
+                          <div className="absolute bottom-4 left-4 right-4 bg-destructive/90 text-destructive-foreground px-4 py-2 rounded-lg">
+                            <p className="text-sm">{cameraError}</p>
+                          </div>
+                        )}
+
+                        {/* Pose error overlay */}
+                        {poseError && (
+                          <div className="absolute bottom-4 left-4 right-4 bg-destructive/90 text-destructive-foreground px-4 py-2 rounded-lg">
+                            <p className="text-sm">Pose Error: {poseError}</p>
+                          </div>
+                        )}
                       </>
                     ) : (
-                      <div className="flex flex-col items-center gap-4">
-                        <svg className="w-12 h-12 text-muted-foreground" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 10l4.553-2.276A1 1 0 0121 8.618v6.764a1 1 0 01-1.447.894L15 14M5 18h8a2 2 0 002-2V8a2 2 0 00-2-2H5a2 2 0 00-2 2v8a2 2 0 002 2z" />
-                        </svg>
-                        <p className="text-muted-foreground">Click camera to start recording</p>
+                      // Uploaded video with pose detection
+                      <div className="w-full h-full relative">
+                        {/* Video element for playback and controls */}
+                        <video
+                          ref={videoRef}
+                          src={uploadedVideo}
+                          autoPlay={false}
+                          controls={true}
+                          className="w-full h-full object-cover rounded-lg"
+                        />
+
+                        {/* Canvas overlay for pose visualization */}
+                        {uploadedVideoPose && (
+                          <div className="absolute inset-0 pointer-events-none">
+                            <PoseCanvas
+                              pose={uploadedVideoPose}
+                              width={640}
+                              height={480}
+                              drawVideo={false}
+                              drawPose={true}
+                              videoElement={videoRef.current}
+                              mirror={false}
+                              className="w-full h-full rounded-lg"
+                            />
+                          </div>
+                        )}
+
+                        {/* Status overlay */}
+                        {uploadedVideoPose && (
+                          <div className="absolute top-4 left-4 flex items-center gap-2">
+                            <div className="flex items-center gap-2 bg-blue-500/90 text-white px-3 py-1 rounded-full">
+                              <span className="text-sm font-medium">Video Analysis</span>
+                            </div>
+                          </div>
+                        )}
                       </div>
                     )}
                   </div>
@@ -400,9 +726,9 @@ export function TranslatePage() {
                   {isSignLanguage(sourceLanguage) ? (
                     <>
                       <button
-                        onClick={handleCameraToggle}
+                        onClick={handleToggleCamera}
                         className={`p-2 rounded-lg transition-colors ${
-                          isRecording
+                          isStreaming
                             ? 'bg-destructive text-destructive-foreground'
                             : 'hover:bg-accent text-muted-foreground'
                         }`}
@@ -412,14 +738,23 @@ export function TranslatePage() {
                           <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 10l4.553-2.276A1 1 0 0121 8.618v6.764a1 1 0 01-1.447.894L15 14M5 18h8a2 2 0 002-2V8a2 2 0 00-2-2H5a2 2 0 00-2 2v8a2 2 0 002 2z" />
                         </svg>
                       </button>
-                      <button
-                        className="p-2 hover:bg-accent rounded-lg transition-colors"
-                        aria-label="Upload video"
-                      >
+                      <label className="p-2 hover:bg-accent rounded-lg transition-colors cursor-pointer">
+                        <input
+                          type="file"
+                          accept="video/*"
+                          onChange={(e) => {
+                            const file = e.target.files?.[0];
+                            if (file) handleFileSelect(file);
+                          }}
+                          className="hidden"
+                        />
                         <svg className="w-5 h-5 text-muted-foreground" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                           <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-8l-4-4m0 0L8 8m4-4v12" />
                         </svg>
-                      </button>
+                      </label>
+                      <span className="text-sm text-muted-foreground">
+                        Frames: {poseHistory.length}
+                      </span>
                     </>
                   ) : (
                     <>
@@ -451,7 +786,9 @@ export function TranslatePage() {
                     </>
                   )}
                 </div>
-                <span className="text-sm text-muted-foreground">{inputText.length} / {MAX_TEXT_LENGTH}</span>
+                <span className="text-sm text-muted-foreground">
+                  {isSignLanguage(sourceLanguage) ? '' : `${inputText.length} / ${MAX_TEXT_LENGTH}`}
+                </span>
               </div>
             </div>
 
@@ -459,7 +796,7 @@ export function TranslatePage() {
             <div className="bg-card border border-border rounded-lg overflow-hidden flex flex-col">
               <div className="flex-1 p-6">
                 {isSignLanguage(targetLanguage) ? (
-                  // Video output for sign language
+                  // Video output for sign language (spoken-to-signed)
                   <div className="h-full min-h-[300px] flex flex-col items-center justify-center bg-muted rounded-lg">
                     {spokenToSigned.isPending ? (
                       <div className="flex flex-col items-center gap-4">
@@ -496,9 +833,57 @@ export function TranslatePage() {
                     )}
                   </div>
                 ) : (
-                  // Text output for spoken language
+                  // Text output for spoken language (signed-to-spoken)
                   <div className="h-full min-h-[300px]">
-                    {inputText ? (
+                    {isProcessingSigned ? (
+                      <div className="flex flex-col items-center justify-center h-full gap-4">
+                        <div className="animate-spin rounded-full h-10 w-10 border-4 border-primary border-t-transparent"></div>
+                        <span className="text-sm text-muted-foreground">Processing sign language...</span>
+                      </div>
+                    ) : signedToSpokenError ? (
+                      <div className="flex flex-col items-center justify-center h-full gap-4">
+                        <div className="w-24 h-24 bg-destructive/10 rounded-full flex items-center justify-center">
+                          <span className="text-4xl">⚠️</span>
+                        </div>
+                        <p className="text-destructive text-center">{signedToSpokenError}</p>
+                        <button
+                          onClick={() => setSignedToSpokenError(null)}
+                          className="px-4 py-2 bg-input-background hover:bg-accent border border-border rounded-lg transition-colors text-sm"
+                        >
+                          Dismiss
+                        </button>
+                      </div>
+                    ) : signedToSpokenResult ? (
+                      <div className="space-y-4">
+                        {/* Translated text */}
+                        <div className="p-4 bg-input-background rounded-lg">
+                          <div className="text-xs text-muted-foreground mb-2">Spoken Text</div>
+                          <p className="text-lg text-foreground">{signedToSpokenResult.text}</p>
+                        </div>
+
+                        {/* Glosses */}
+                        {signedToSpokenResult.glosses.length > 0 && (
+                          <div className="p-4 bg-input-background rounded-lg">
+                            <div className="text-xs text-muted-foreground mb-2">Detected Signs (Gloss)</div>
+                            <div className="flex flex-wrap gap-2">
+                              {signedToSpokenResult.glosses.map((gloss, index) => (
+                                <span
+                                  key={index}
+                                  className="px-3 py-1 bg-accent rounded-full text-sm"
+                                >
+                                  {gloss}
+                                </span>
+                              ))}
+                            </div>
+                          </div>
+                        )}
+
+                        {/* Timestamp */}
+                        <div className="text-xs text-muted-foreground">
+                          Translated at: {new Date(signedToSpokenResult.timestamp).toLocaleTimeString()}
+                        </div>
+                      </div>
+                    ) : inputText ? (
                       <p className="text-foreground">
                         {inputText} <span className="text-muted-foreground">(translated to {targetLanguage.toUpperCase()})</span>
                       </p>
@@ -514,8 +899,10 @@ export function TranslatePage() {
                 <div className="flex items-center gap-2">
                   <button
                     onClick={() => {
-                      if (inputText) {
+                      if (isSignLanguage(targetLanguage) && inputText) {
                         navigator.clipboard.writeText(inputText);
+                      } else if (signedToSpokenResult?.text) {
+                        navigator.clipboard.writeText(signedToSpokenResult.text);
                       }
                     }}
                     className="p-2 hover:bg-accent rounded-lg transition-colors"
@@ -535,8 +922,8 @@ export function TranslatePage() {
                   </button>
                   {!isSignLanguage(targetLanguage) && (
                     <button
-                      onClick={() => speak(inputText)}
-                      disabled={!inputText || isSpeaking}
+                      onClick={() => speak(signedToSpokenResult?.text || inputText)}
+                      disabled={(!signedToSpokenResult?.text && !inputText) || isSpeaking}
                       className="p-2 hover:bg-accent rounded-lg transition-colors disabled:opacity-50"
                       aria-label="Text to speech"
                     >
@@ -546,13 +933,13 @@ export function TranslatePage() {
                     </button>
                   )}
                 </div>
-                {inputText && (
+                {(inputText || poseHistory.length > 0) && (
                   <button
                     onClick={handleTranslate}
-                    disabled={spokenToSigned.isPending}
+                    disabled={spokenToSigned.isPending || isProcessingSigned}
                     className="px-4 py-2 bg-primary text-primary-foreground hover:bg-primary/90 rounded-lg transition-colors text-sm font-medium disabled:opacity-50"
                   >
-                    {spokenToSigned.isPending ? 'Translating...' : 'Translate'}
+                    {spokenToSigned.isPending || isProcessingSigned ? 'Translating...' : 'Translate'}
                   </button>
                 )}
               </div>

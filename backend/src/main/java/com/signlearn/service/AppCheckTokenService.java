@@ -20,6 +20,11 @@ public class AppCheckTokenService {
     // Default token expiration: 50 minutes (AppCheck tokens typically expire in 1 hour)
     private static final long TOKEN_EXPIRY_MINUTES = 50;
 
+    // Token validation constraints
+    private static final int MIN_TOKEN_LENGTH = 10;
+    private static final int MAX_TOKEN_LENGTH = 1000;
+    private static final int MAX_SOURCE_LENGTH = 100;
+
     public static class TokenInfo {
         private final String token;
         private final LocalDateTime expiresAt;
@@ -40,9 +45,29 @@ public class AppCheckTokenService {
     /**
      * Store an AppCheck token
      * @param token The AppCheck token
-     * @param source Source identifier (e.g., "angular", "mobile")
+     * @param source Source identifier (e.g., "react", "mobile")
+     * @throws IllegalArgumentException if token or source is invalid
      */
     public void storeToken(String token, String source) {
+        // Validate token
+        if (token == null || token.trim().isEmpty()) {
+            throw new IllegalArgumentException("Token cannot be null or empty");
+        }
+        if (token.length() < MIN_TOKEN_LENGTH) {
+            throw new IllegalArgumentException("Token too short. Minimum length is " + MIN_TOKEN_LENGTH);
+        }
+        if (token.length() > MAX_TOKEN_LENGTH) {
+            throw new IllegalArgumentException("Token too long. Maximum length is " + MAX_TOKEN_LENGTH);
+        }
+
+        // Validate source
+        if (source == null || source.trim().isEmpty()) {
+            throw new IllegalArgumentException("Source cannot be null or empty");
+        }
+        if (source.length() > MAX_SOURCE_LENGTH) {
+            throw new IllegalArgumentException("Source too long. Maximum length is " + MAX_SOURCE_LENGTH);
+        }
+
         LocalDateTime expiresAt = LocalDateTime.now().plus(TOKEN_EXPIRY_MINUTES, ChronoUnit.MINUTES);
         TokenInfo tokenInfo = new TokenInfo(token, expiresAt);
         tokenCache.put(source, tokenInfo);

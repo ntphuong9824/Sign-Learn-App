@@ -13,7 +13,7 @@ interface AnimationState {
 }
 
 // TODO: Integrate with TensorFlow.js for actual animation processing
-// The Angular animation.service.ts contains ML model logic that needs TF.js
+// The legacy animation.service.ts contains ML model logic that needs TF.js
 
 export function useAnimation() {
   const [state, setState] = useState<AnimationState>({
@@ -77,7 +77,7 @@ export function useAnimation() {
   };
 }
 
-// Animation constants from Angular (simplified)
+// Animation constants (simplified)
 export const ANIMATION_JOINTS = [
   'mixamorigHead', 'mixamorigNeck', 'mixamorigSpine', 'mixamorigSpine1', 'mixamorigSpine2', 'mixamorigHips',
   'mixamorigLeftUpLeg', 'mixamorigLeftLeg', 'mixamorigLeftToeBase', 'mixamorigLeftFoot',
